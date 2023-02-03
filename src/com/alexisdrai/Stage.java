@@ -1,6 +1,7 @@
 package com.alexisdrai;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -8,23 +9,21 @@ public class Stage extends Thread {
     private final BlockingQueue<Integer> in;
     private final BlockingQueue<Integer> out;
     private int number;
+    private final AtomicBoolean running = new AtomicBoolean(false);
 
-    public Stage(BlockingQueue<Integer> in, BlockingQueue<Integer> out, int number) {
+    public Stage(BlockingQueue<Integer> in, BlockingQueue<Integer> out) {
         this.in = in;
         this.out = out;
-        this.number = number;
+    }
+
+    public void cleanStop() {
+        running.set(false);
     }
 
     @Override
     public void run() {
-        while (true) {
-//            while (in.isEmpty()) {
-//                try {
-//                    wait();
-//                } catch (InterruptedException e) {
-//                    Logger.getLogger(Stage.class.getName()).log(Level.SEVERE, null, e);
-//                }
-//            }
+        running.set(true);
+        while (running.get()) {
             try {
 
                 number = in.take();
@@ -42,7 +41,9 @@ public class Stage extends Thread {
             } catch (InterruptedException e) {
                 Logger.getLogger(Stage.class.getName()).log(Level.SEVERE, null, e);
             }
-//            out.notifyAll();
+            synchronized (out) {
+                out.notifyAll();
+            }
         }
     }
 }
